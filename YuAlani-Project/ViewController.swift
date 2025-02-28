@@ -10,19 +10,56 @@ import UIKit
 class ViewController: UIViewController {
     
     var floorPlan = [Room]();
+    var current: Room?;
     
-    var room1: Room?
-    var room2: Room?
-    var room3: Room?
-    var room4: Room?
-    var room5: Room?
-    var room6: Room?
-    var room7: Room?
-
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
     }
     
+    // creates the building data structure
+    func loadMap(){
+        var room1: [String] = ["Living Room", "Dining Room", "None", "None", "None",
+                               "Upper Hall", "None"];
+        var room2: [String] = ["Kitchen", "None", "Dining Room", "None", "None", "None", "None"];
+        //var room3: [String] = [""];
+        //var room4: [String] = [""];
+        //var room5: [String] = [""];
+        //var room6: [String] = [""];
+        //var room7: [String] = [""];
+        
+        createRoom(roomInfo: room1)
+        createRoom(roomInfo: room2)
+    }
+    
+    // creates a room object and appends it to the floor plan
+    func createRoom(roomInfo: [String]){
+        floorPlan.append(Room(name: roomInfo[0], north: roomInfo[1], east: roomInfo[2], south: roomInfo[3], west: roomInfo[4], up: roomInfo[5], down: roomInfo[6]))
+    }
+    
+    // prints the current room
+    func look(){
+        print("You are in the \(current!.name)")
+    }
+    
+    // gets the corresponding room object when given its name
+    func getRoom(roomName: String) -> Room{
+        var selectRoom: Room?;
+        
+        for room in floorPlan{
+            if room.name == roomName{
+                selectRoom = room;
+            }
+        }
+        return selectRoom!
+    }
+    
+    // displays all rooms
+    func displayAllRooms(){
+        for room in floorPlan{
+            print("\(room.name)\n\t\(room.north)\n\t\(room.east)\n\t\(room.south)\n\t\(room.west)\n\t\(room.up)\n\t\(room.down)")
+            print()
+        }
+    }
 }
 

@@ -1,4 +1,7 @@
-//
+// Project: YuAlani-Project
+// EID: ay7892
+// Course: CS329E
+
 //  ViewController.swift
 //  YuAlani-Project
 //
@@ -15,26 +18,55 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+        loadMap()
+        displayAllRooms()
+        current = floorPlan[0]
+        
+        current = move(direction:"south") // can’t move this direction
+        current = move(direction:"west") // can’t move this direction
+        current = move(direction:"north") // Dining Room
+        current = move(direction:"south") // Living Room
+        current = move(direction:"up") // Upper Hall
+        look() // Upper Hall
+        current = move(direction:"east") // Small Bedroom
+        current = move(direction:"east") // can’t move this direction
+        current = move(direction:"west") // Upper Hall
+        current = move(direction:"south") // Master Bedroom
+        current = move(direction:"north") // Upper Hall
+        current = move(direction:"north") // Bathroom
+        current = move(direction:"south") // Upper Hall
+        look() // Upper Hall
+        current = move(direction:"west") // can’t move this direction
+        look() // still in the Upper Hall
+        current = move(direction:"down") // Living Room
+        current = move(direction:"north") // Dining Room
+        current = move(direction:"west") // Kitchen
+        current = move(direction:"north") // can’t move this direction
     }
     
     // creates the building data structure
     func loadMap(){
-        var room1: [String] = ["Living Room", "Dining Room", "None", "None", "None",
+        let room1: [String] = ["Living Room", "Dining Room", "None", "None", "None",
                                "Upper Hall", "None"];
-        var room2: [String] = ["Kitchen", "None", "Dining Room", "None", "None", "None", "None"];
-        //var room3: [String] = [""];
-        //var room4: [String] = [""];
-        //var room5: [String] = [""];
-        //var room6: [String] = [""];
-        //var room7: [String] = [""];
+        let room2: [String] = ["Dining Room", "None", "None", "Living Room", "Kitchen", "None", "None"];
+        let room3: [String] = ["Kitchen", "None", "Dining Room", "None", "None", "None", "None"];
+        let room4: [String] = ["Upper Hall", "Bathroom", "Small Bedroom", "Master Bedroom", "None", "None", "Living Room"];
+        let room5: [String] = ["Bathroom", "None", "None", "Upper Hall", "None", "None", "None"];
+        let room6: [String] = ["Small Bedroom", "None", "None", "None", "Upper Hall", "None", "None"];
+        let room7: [String] = ["Master Bedroom", "Upper Hall", "None", "None", "None", "None", "None"];
         
-        createRoom(roomInfo: room1)
-        createRoom(roomInfo: room2)
+        floorPlan.append(createRoom(roomInfo: room1))
+        floorPlan.append(createRoom(roomInfo: room2))
+        floorPlan.append(createRoom(roomInfo: room3))
+        floorPlan.append(createRoom(roomInfo: room4))
+        floorPlan.append(createRoom(roomInfo: room5))
+        floorPlan.append(createRoom(roomInfo: room6))
+        floorPlan.append(createRoom(roomInfo: room7))
     }
     
-    // creates a room object and appends it to the floor plan
-    func createRoom(roomInfo: [String]){
-        floorPlan.append(Room(name: roomInfo[0], north: roomInfo[1], east: roomInfo[2], south: roomInfo[3], west: roomInfo[4], up: roomInfo[5], down: roomInfo[6]))
+    // creates a room object
+    func createRoom(roomInfo: [String]) -> Room{
+        return Room(name: roomInfo[0], north: roomInfo[1], east: roomInfo[2], south: roomInfo[3], west: roomInfo[4], up: roomInfo[5], down: roomInfo[6])
     }
     
     // prints the current room
@@ -47,7 +79,8 @@ class ViewController: UIViewController {
         var selectRoom: Room?;
         
         for room in floorPlan{
-            if room.name == roomName{
+            //print(room.name, roomName)
+            if room.name.lowercased() == roomName.lowercased(){
                 selectRoom = room;
             }
         }
@@ -57,8 +90,7 @@ class ViewController: UIViewController {
     // displays all rooms
     func displayAllRooms(){
         for room in floorPlan{
-            print("\(room.name)\n\t\(room.north)\n\t\(room.east)\n\t\(room.south)\n\t\(room.west)\n\t\(room.up)\n\t\(room.down)")
-            print()
+            room.displayRoom()
         }
     }
     
@@ -80,14 +112,14 @@ class ViewController: UIViewController {
             newRoomName = current!.down
         }
         
-        if(newRoomName == "none"){ // checks if there is no room in the direction
+        if(newRoomName.lowercased() == "none"){ // checks if there is no room in the direction
             print("You can't move in that direction!")
             return current!
         }
         else{
             current = getRoom(roomName: newRoomName)
             
-            print("You are now in \(newRoomName).")
+            print("You are now in the \(newRoomName).")
             return current!
         }
     }

@@ -1,4 +1,7 @@
-//
+// Project: YuAlani-Project
+// EID: ay7892
+// Course: CS329E
+
 //  Room.swift
 //  YuAlani-Project
 //
@@ -24,11 +27,29 @@ class Room {
         self.west = west
         self.up = up
         self.down = down
-        
     }
     
     // prints adjacent rooms
     func displayRoom(){
-        
+        print("Room name: \(self.name)")
+        if(self.north != "None"){
+            print("\tRoom to the north: \(self.north)")
+        }
+        if(self.east != "None"){
+            print("\tRoom to the east: \(self.east)")
+        }
+        if(self.south != "None"){
+            print("\tRoom to the south: \(self.south)")
+        }
+        if(self.west != "None"){
+            print("\tRoom to the west: \(self.west)")
+        }
+        if(self.up != "None"){
+            print("\tRoom above: \(self.up)")
+        }
+        if(self.down != "None"){
+            print("\tRoom below: \(self.down)")
+        }
+        print()
     }
 }

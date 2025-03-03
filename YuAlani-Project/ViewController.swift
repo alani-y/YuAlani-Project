@@ -61,5 +61,35 @@ class ViewController: UIViewController {
             print()
         }
     }
+    
+    func move(direction: String) -> Room{
+        var newRoomName: String
+        
+        switch direction.lowercased(){
+        case "north":
+            newRoomName = current!.north
+        case "east":
+            newRoomName = current!.east
+        case "south":
+            newRoomName = current!.south
+        case "west":
+            newRoomName = current!.west
+        case "up":
+            newRoomName = current!.up
+        default:
+            newRoomName = current!.down
+        }
+        
+        if(newRoomName == "none"){ // checks if there is no room in the direction
+            print("You can't move in that direction!")
+            return current!
+        }
+        else{
+            current = getRoom(roomName: newRoomName)
+            
+            print("You are now in \(newRoomName).")
+            return current!
+        }
+    }
 }
 

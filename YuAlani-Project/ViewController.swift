@@ -10,17 +10,16 @@
 
 import UIKit
 
+var floorPlan = [Room]()
+var current: Room = floorPlan[0]
+
 class ViewController: UIViewController {
-    
-    var floorPlan = [Room]();
-    var current: Room?;
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         loadMap()
         displayAllRooms()
-        current = floorPlan[0]
         
         current = move(direction:"south") // can’t move this direction
         current = move(direction:"west") // can’t move this direction
@@ -46,22 +45,31 @@ class ViewController: UIViewController {
     
     // creates the building data structure
     func loadMap(){
-        let room1: [String] = ["Living Room", "Dining Room", "None", "None", "None",
-                               "Upper Hall", "None"];
-        let room2: [String] = ["Dining Room", "None", "None", "Living Room", "Kitchen", "None", "None"];
-        let room3: [String] = ["Kitchen", "None", "Dining Room", "None", "None", "None", "None"];
-        let room4: [String] = ["Upper Hall", "Bathroom", "Small Bedroom", "Master Bedroom", "None", "None", "Living Room"];
-        let room5: [String] = ["Bathroom", "None", "None", "Upper Hall", "None", "None", "None"];
-        let room6: [String] = ["Small Bedroom", "None", "None", "None", "Upper Hall", "None", "None"];
-        let room7: [String] = ["Master Bedroom", "Upper Hall", "None", "None", "None", "None", "None"];
+        let hangar: [String] = ["Hangar", "None", "None", "Spaceship", "Port marketplace", "None", "None"];
+        let marketplace: [String] = ["Port marketplace", "Supply depot", "Hangar", "Noodles restaurant", "Mechanic shop", "None", "None"];
+        let supplyDepot: [String] = ["Supply depot", "Break room", "Janitor's closet", "Port marketplace", "None", "None", "None"];
         
-        floorPlan.append(createRoom(roomInfo: room1))
-        floorPlan.append(createRoom(roomInfo: room2))
-        floorPlan.append(createRoom(roomInfo: room3))
-        floorPlan.append(createRoom(roomInfo: room4))
-        floorPlan.append(createRoom(roomInfo: room5))
-        floorPlan.append(createRoom(roomInfo: room6))
-        floorPlan.append(createRoom(roomInfo: room7))
+        let closet = ["Janitor's closet", "None", "None", "None", "Supply depot", "None", "None"]
+        
+        let breakRoom = ["Break room", "None", "None", "Supply depot", "None", "None", "None"]
+        
+        let mechanicShop: [String] = ["Mechanic shop", "None", "Port marketplace", "None", "None", "None", "None"];
+        
+        let restaurant: [String] = ["Noodles restaurant", "Port marketplace", "None", "None", "None", "Attic", "None"];
+        
+        let attic: [String] = ["Attic", "None", "None", "None", "None", "None", "Noodles restaurant"]
+        
+        let spaceship: [String] = ["Spaceship", "Hangar", "None", "None", "Spaceship living room", "None", "None"];
+        
+        let livingRoom: [String] = ["Spaceship living room", "None", "Spaceship", "None", "None", "None", "None"];
+        
+        floorPlan.append(createRoom(roomInfo: hangar))
+        floorPlan.append(createRoom(roomInfo: marketplace))
+        floorPlan.append(createRoom(roomInfo: supplyDepot))
+        floorPlan.append(createRoom(roomInfo: mechanicShop))
+        floorPlan.append(createRoom(roomInfo: restaurant))
+        floorPlan.append(createRoom(roomInfo: spaceship))
+        floorPlan.append(createRoom(roomInfo: livingRoom))
     }
     
     // creates a room object
@@ -71,7 +79,7 @@ class ViewController: UIViewController {
     
     // prints the current room
     func look(){
-        print("You are in the \(current!.name)")
+        print("You are currently in the \(current.name)")
     }
     
     // gets the corresponding room object when given its name
@@ -99,28 +107,28 @@ class ViewController: UIViewController {
         
         switch direction.lowercased(){
         case "north":
-            newRoomName = current!.north
+            newRoomName = current.north
         case "east":
-            newRoomName = current!.east
+            newRoomName = current.east
         case "south":
-            newRoomName = current!.south
+            newRoomName = current.south
         case "west":
-            newRoomName = current!.west
+            newRoomName = current.west
         case "up":
-            newRoomName = current!.up
+            newRoomName = current.up
         default:
-            newRoomName = current!.down
+            newRoomName = current.down
         }
         
         if(newRoomName.lowercased() == "none"){ // checks if there is no room in the direction
             print("You can't move in that direction!")
-            return current!
+            return current
         }
         else{
             current = getRoom(roomName: newRoomName)
             
             print("You are now in the \(newRoomName).")
-            return current!
+            return current
         }
     }
 }

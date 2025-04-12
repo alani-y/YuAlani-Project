@@ -12,6 +12,8 @@ import UIKit
 
 var floorPlan = [Room]()
 var current: Room = floorPlan[0]
+var inventory: [String] = []
+var inventoryObjects: [Item] = []
 
 class ViewController: UIViewController {
     
@@ -45,41 +47,45 @@ class ViewController: UIViewController {
     
     // creates the building data structure
     func loadMap(){
-        let hangar: [String] = ["Hangar", "None", "None", "Spaceship", "Port marketplace", "None", "None"];
-        let marketplace: [String] = ["Port marketplace", "Supply depot", "Hangar", "Noodles restaurant", "Mechanic shop", "None", "None"];
-        let supplyDepot: [String] = ["Supply depot", "Break room", "Janitor's closet", "Port marketplace", "None", "None", "None"];
+        let hangar: [Any] = ["Hangar", "None", "None", "Spaceship", "Port marketplace", "None", "None", ["None"]];
+        let marketplace: [Any] = ["Port marketplace", "Supply depot", "Hangar", "Noodles restaurant", "Mechanic shop", "None", "None", ["None"]];
+        let supplyDepot: [Any] = ["Supply depot", "Break room", "Janitor's closet", "Port marketplace", "None", "None", "None", ["Supply crate", "Fuel canister"]];
         
-        let closet = ["Janitor's closet", "None", "None", "None", "Supply depot", "None", "None"]
+        let closet: [Any] = ["Janitor's closet", "None", "None", "None", "Supply depot", "None", "None", ["Break room key"]]
         
-        let breakRoom = ["Break room", "None", "None", "Supply depot", "None", "None", "None"]
+        let breakRoom: [Any] = ["Break room", "None", "None", "Supply depot", "None", "None", "None", ["Suspicious blender"]]
         
-        let mechanicShop: [String] = ["Mechanic shop", "None", "Port marketplace", "None", "None", "None", "None"];
+        let mechanicShop: [Any] = ["Mechanic shop", "None", "Port marketplace", "None", "None", "None", "None", ["Toolbox", "Maitenance robot"]];
         
-        let restaurant: [String] = ["Noodles restaurant", "Port marketplace", "None", "None", "None", "Attic", "None"];
+        let restaurant: [Any] = ["Noodles restaurant", "Port marketplace", "None", "None", "None", "Attic", "None", ["Hot meal"]];
         
-        let attic: [String] = ["Attic", "None", "None", "None", "None", "None", "Noodles restaurant"]
+        let attic: [Any] = ["Attic", "None", "None", "None", "None", "None", "Noodles restaurant", ["Blankets"]]
         
-        let spaceship: [String] = ["Spaceship", "Hangar", "None", "None", "Spaceship living room", "None", "None"];
+        let spaceship: [Any] = ["Spaceship", "Hangar", "None", "None", "Spaceship living room", "None", "None", ["None"]];
         
-        let livingRoom: [String] = ["Spaceship living room", "None", "Spaceship", "None", "None", "None", "None"];
+        let livingRoom: [Any] = ["Spaceship living room", "None", "Spaceship", "None", "None", "None", "None", ["Brand new rifle"]];
         
         floorPlan.append(createRoom(roomInfo: hangar))
         floorPlan.append(createRoom(roomInfo: marketplace))
         floorPlan.append(createRoom(roomInfo: supplyDepot))
+        floorPlan.append(createRoom(roomInfo: closet))
+        floorPlan.append(createRoom(roomInfo: breakRoom))
         floorPlan.append(createRoom(roomInfo: mechanicShop))
         floorPlan.append(createRoom(roomInfo: restaurant))
+        floorPlan.append(createRoom(roomInfo: attic))
         floorPlan.append(createRoom(roomInfo: spaceship))
         floorPlan.append(createRoom(roomInfo: livingRoom))
     }
     
     // creates a room object
-    func createRoom(roomInfo: [String]) -> Room{
-        return Room(name: roomInfo[0], north: roomInfo[1], east: roomInfo[2], south: roomInfo[3], west: roomInfo[4], up: roomInfo[5], down: roomInfo[6])
+    func createRoom(roomInfo: [Any]) -> Room{
+        return Room(name: roomInfo[0] as! String, north: roomInfo[1] as! String, east: roomInfo[2] as! String, south: roomInfo[3] as! String, west: roomInfo[4] as! String, up: roomInfo[5] as! String, down: roomInfo[6] as! String, contents: roomInfo[7] as! [String])
     }
     
     // prints the current room
     func look(){
         print("You are currently in the \(current.name)")
+        print(getContentsOfRoom(roomName: current.name))
     }
     
     // gets the corresponding room object when given its name
@@ -95,10 +101,47 @@ class ViewController: UIViewController {
         return selectRoom!
     }
     
+    // shows the items in the room
+    func getContentsOfRoom(roomName: String) -> String{
+        let room = getRoom(roomName: roomName)
+        
+        var outputString = "Contents of the room: "
+        if room.contents.count > 0  {
+            for item in room.contents{
+                outputString += "\n\t\(item)"
+            }
+        }
+        else {
+            outputString += "\n\t Nothing"
+        }
+        
+        return outputString
+    }
+    
     // displays all rooms
     func displayAllRooms(){
         for room in floorPlan{
             room.displayRoom()
+        }
+    }
+    
+    func pickup(item: String){
+        if current.contents.contains(item){
+            inventory.append(item)
+            print("You now have the \(item). ")
+        }
+        else{
+            print("That item is not in this room.")
+        }
+    }
+    
+    func drop(item: String){
+        if let index = inventory.firstIndex(of: item) {
+            inventory.remove(at: index)
+            print("You have dropped the \(item).")
+        }
+        else{
+            print("You don’t have that item.")
         }
     }
     
@@ -124,12 +167,35 @@ class ViewController: UIViewController {
             print("You can't move in that direction!")
             return current
         }
+        else if !checkPurchase(){ // checks for if the user bought all their inventory
+            print("Hey! You need to pay for that!")
+            return current
+        }
         else{
             current = getRoom(roomName: newRoomName)
             
             print("You are now in the \(newRoomName).")
             return current
         }
+    }
+    
+    // buys an item that the user has in inventory
+    func buy(item: String){
+        print("Are you sure you want to buy the \(item)")
+    }
+    
+    // sells an item the user has in inventory
+    func sell(item: String){
+        print("Are you sure you want to sell the \(item)")
+    }
+    
+    // checks if all purchasable items in the user's inventory have been paid for
+    func checkPurchase() -> Bool{
+        return true
+    }
+    
+    func updateInventory(){
+        
     }
 }
 

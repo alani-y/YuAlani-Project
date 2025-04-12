@@ -18,8 +18,9 @@ class Room {
     var west: String
     var up: String
     var down: String
+    var contents: [String]
     
-    init(name: String, north: String, east: String, south: String, west: String, up: String, down: String){
+    init(name: String, north: String, east: String, south: String, west: String, up: String, down: String, contents: [String]){
         self.name = name
         self.north = north
         self.east = east
@@ -27,6 +28,7 @@ class Room {
         self.west = west
         self.up = up
         self.down = down
+        self.contents = contents
     }
     
     // prints adjacent rooms

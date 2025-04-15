@@ -12,8 +12,15 @@ import UIKit
 
 var floorPlan = [Room]()
 var current: Room = floorPlan[0]
+
+// stores the user active inventory
 var inventory: [String] = []
-var inventoryObjects: [Item] = []
+
+// stores all objects in the game
+var allObjects: [Item] = []
+
+// the amount of credits the user has
+var credits: Int = 500
 
 class ViewController: UIViewController {
     
@@ -180,22 +187,49 @@ class ViewController: UIViewController {
     }
     
     // buys an item that the user has in inventory
-    func buy(item: String){
-        print("Are you sure you want to buy the \(item)")
+    func buy(itemName: String){
+        var willBuy = true
+        print("Are you sure you want to buy the \(itemName)")
+        
+        // reduces the user's credit amount by the item's price
+        if willBuy && inventory.contains(itemName) {
+            credits -= retrieveItem(itemName: itemName).price
+        }
+        else{
+            print("There was an error buying the item.")
+        }
     }
     
     // sells an item the user has in inventory
-    func sell(item: String){
-        print("Are you sure you want to sell the \(item)")
+    func sell(itemName: String){
+        var willSell = true
+        print("Are you sure you want to sell the \(itemName)")
+        
+        if willSell && inventory.contains(itemName) {
+            credits += retrieveItem(itemName: itemName).price
+        }
+        else{
+            print("There was an error selling the item.")
+        }
     }
     
     // checks if all purchasable items in the user's inventory have been paid for
     func checkPurchase() -> Bool{
+        for item in inventory{
+            if !retrieveItem(itemName: item).hasPaid{
+                return false
+            }
+        }
         return true
     }
     
-    func updateInventory(){
-        
+    // gets the corresponding Item object when given an item's name
+    func retrieveItem(itemName: String) -> Item{
+        // checks that an object with the itemName exists
+        guard let found = allObjects.first(where: { $0.name == itemName }) else {
+        fatalError("Item with name \(itemName) not found")
+        }
+        return found
     }
 }
 

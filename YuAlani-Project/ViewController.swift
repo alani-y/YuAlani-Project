@@ -22,34 +22,21 @@ var allObjects: [Item] = []
 // the amount of credits the user has
 var credits: Int = 500
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, UITextFieldDelegate {
+    
+    @IBOutlet weak var commandField: UITextField!
+    @IBOutlet weak var commandOutput: UILabel!
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        commandField.delegate = self
+        
         // Do any additional setup after loading the view.
         loadMap()
         displayAllRooms()
         
-        current = move(direction:"south") // can’t move this direction
-        current = move(direction:"west") // can’t move this direction
-        current = move(direction:"north") // Dining Room
-        current = move(direction:"south") // Living Room
-        current = move(direction:"up") // Upper Hall
-        look() // Upper Hall
-        current = move(direction:"east") // Small Bedroom
-        current = move(direction:"east") // can’t move this direction
-        current = move(direction:"west") // Upper Hall
-        current = move(direction:"south") // Master Bedroom
-        current = move(direction:"north") // Upper Hall
-        current = move(direction:"north") // Bathroom
-        current = move(direction:"south") // Upper Hall
-        look() // Upper Hall
-        current = move(direction:"west") // can’t move this direction
-        look() // still in the Upper Hall
-        current = move(direction:"down") // Living Room
-        current = move(direction:"north") // Dining Room
-        current = move(direction:"west") // Kitchen
-        current = move(direction:"north") // can’t move this direction
+
+        look()
     }
     
     // creates the building data structure
@@ -91,8 +78,8 @@ class ViewController: UIViewController {
     
     // prints the current room
     func look(){
-        print("You are currently in the \(current.name)")
-        print(getContentsOfRoom(roomName: current.name))
+        printOutput(outputText: "You are currently in the \(current.name)")
+        commandOutput.text! += "\n" + getContentsOfRoom(roomName: current.name)
     }
     
     // gets the corresponding room object when given its name
@@ -133,22 +120,31 @@ class ViewController: UIViewController {
     }
     
     func pickup(item: String){
+        // checks to make sure that the item is in the room
+        if !current.contents.contains(item){
+            commandOutput.text = "That item is not in this room."
+            return
+        }
         if current.contents.contains(item){
             inventory.append(item)
-            print("You now have the \(item). ")
+            printOutput(outputText: "You now have the \(item). ")
         }
         else{
-            print("That item is not in this room.")
+            printOutput(outputText: "That item is not in this room.")
         }
     }
     
     func drop(item: String){
         if let index = inventory.firstIndex(of: item) {
+            
+            //
+            current.contents.append(inventory[index])
+            
             inventory.remove(at: index)
-            print("You have dropped the \(item).")
+            printOutput(outputText: "You have dropped the \(item).")
         }
         else{
-            print("You don’t have that item.")
+            printOutput(outputText: "You don’t have that item.")
         }
     }
     
@@ -171,17 +167,17 @@ class ViewController: UIViewController {
         }
         
         if(newRoomName.lowercased() == "none"){ // checks if there is no room in the direction
-            print("You can't move in that direction!")
+            printOutput(outputText: "You can't move in that direction!")
             return current
         }
         else if !checkPurchase(){ // checks for if the user bought all their inventory
-            print("Hey! You need to pay for that!")
+            printOutput(outputText: "Hey! You need to pay for that!")
             return current
         }
         else{
             current = getRoom(roomName: newRoomName)
             
-            print("You are now in the \(newRoomName).")
+            printOutput(outputText: "You are now in the \(newRoomName).")
             return current
         }
     }
@@ -189,31 +185,31 @@ class ViewController: UIViewController {
     // buys an item that the user has in inventory
     func buy(itemName: String){
         var willBuy = true
-        print("Are you sure you want to buy the \(itemName)")
+        printOutput(outputText:"Are you sure you want to buy the \(itemName)? (Y/N)")
         
         // reduces the user's credit amount by the item's price
         if willBuy && inventory.contains(itemName) {
             credits -= retrieveItem(itemName: itemName).price
         }
         else{
-            print("There was an error buying the item.")
+            printOutput(outputText: "There was an error buying the item.")
         }
     }
     
     // sells an item the user has in inventory
     func sell(itemName: String){
         var willSell = true
-        print("Are you sure you want to sell the \(itemName)")
+        commandField.text = "Are you sure you want to sell the \(itemName)? (Y/N)"
         
         if willSell && inventory.contains(itemName) {
             credits += retrieveItem(itemName: itemName).price
         }
         else{
-            print("There was an error selling the item.")
+            commandOutput.text = "There was an error selling the item."
         }
     }
     
-    // checks if all purchasable items in the user's inventory have been paid for
+    // checks if all items in the user's inventory have been paid for
     func checkPurchase() -> Bool{
         for item in inventory{
             if !retrieveItem(itemName: item).hasPaid{
@@ -230,6 +226,90 @@ class ViewController: UIViewController {
         fatalError("Item with name \(itemName) not found")
         }
         return found
+    }
+    
+    func getInventory() -> String{
+        var outputString = "Inventory: "
+        for item in inventory{
+            outputString += "\n\t" + item
+        }
+        
+        return outputString
+    }
+    
+    @IBAction func enterButton(_ sender: Any) {
+        var command: String
+        var itemArg = ""
+        
+        let commandFieldText = commandField.text
+        commandField.placeholder = "Command?"
+        
+        var commandTextSplit = commandFieldText?.components(separatedBy: " ")
+        
+        // isolates the command from the rest of the commandField text
+        command = commandTextSplit![0].lowercased()
+        
+        if commandTextSplit!.count > 0{
+            // removes the command
+            commandTextSplit?.remove(at: 0)
+            
+            // rejoins the remaining text to form the object name if using
+            itemArg = (commandTextSplit?.joined(separator: " "))!
+        }
+        
+        switch command{
+        case "look":
+            look()
+        case "north":
+            current = move(direction: "north")
+        case "east":
+            current = move(direction: "east")
+        case "south":
+            current = move(direction: "south")
+        case "west":
+            current = move(direction: "west")
+        case "up":
+            current = move(direction: "up")
+        case "down":
+            current = move(direction: "down")
+        case "inventory":
+            commandOutput.text = getInventory()
+        case "exit":
+            printOutput(outputText: "exit")
+        case "get":
+            pickup(item: itemArg)
+        case "drop":
+            drop(item: itemArg)
+        case "help":
+            help()
+        case "buy":
+            buy(itemName: itemArg)
+        case "sell":
+            sell(itemName: itemArg)
+        default:
+            printOutput(outputText: "That's not a valid command.")
+        }
+    }
+    
+    func printOutput(outputText: String){
+        commandOutput.text = outputText
+    }
+    
+    func help(){
+        commandOutput.text = """
+        look: display the name of the current room and its contents
+        north: move north
+        east: move east
+        south: move south
+        west: move west
+        up: move up
+        down: move down
+        inventory: list what items you’re currently carrying
+        get item: pick up an item currently in the room
+        drop item: drop an item you’re currently carrying
+        help: print this list
+        exit: quit the game
+        """
     }
 }
 

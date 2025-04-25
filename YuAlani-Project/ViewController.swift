@@ -17,7 +17,18 @@ var current: Room = floorPlan[0]
 var inventory: [String] = []
 
 // stores all objects in the game
-var allObjects: [Item] = []
+var allObjects: [Item] = [
+    Item(name: "supply crate", price: 0, hasPaid: false),
+    Item(name: "fuel canister", price: 100, hasPaid: false),
+    Item(name: "break room key", price: 0, hasPaid: false),
+    Item(name: "suspicious blender", price: 99, hasPaid: false),
+    Item(name: "toolbox", price: 50, hasPaid: false),
+    Item(name: "hot meal", price: 20, hasPaid: false),
+    Item(name: "blankets", price: 0, hasPaid: false),
+    Item(name: "brand new rifle", price: 600, hasPaid: true),
+    Item(name: "maintenance robot", price: 500, hasPaid: false),
+    Item(name: "none", price: 0, hasPaid: true)
+]
 
 // the amount of credits the user has
 var credits: Int = 500
@@ -26,38 +37,41 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     @IBOutlet weak var commandField: UITextField!
     @IBOutlet weak var commandOutput: UILabel!
+    @IBOutlet weak var creditAmount: UILabel!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         commandField.delegate = self
+        commandField.placeholder = "Command?"
         
         // Do any additional setup after loading the view.
         loadMap()
         displayAllRooms()
         
-
+        creditAmount.text = "Credits: \(credits)"
+        commandField.placeholder = "Command output"
         look()
     }
     
     // creates the building data structure
     func loadMap(){
-        let hangar: [Any] = ["Hangar", "None", "None", "Spaceship", "Port marketplace", "None", "None", ["None"]];
-        let marketplace: [Any] = ["Port marketplace", "Supply depot", "Hangar", "Noodles restaurant", "Mechanic shop", "None", "None", ["None"]];
-        let supplyDepot: [Any] = ["Supply depot", "Break room", "Janitor's closet", "Port marketplace", "None", "None", "None", ["Supply crate", "Fuel canister"]];
+        let hangar: [Any] = ["Hangar", "None", "None", "Spaceship", "Port marketplace", "None", "None", ["none"]];
+        let marketplace: [Any] = ["Port marketplace", "Supply depot", "Hangar", "Noodles restaurant", "Mechanic shop", "None", "None", ["none"]];
+        let supplyDepot: [Any] = ["Supply depot", "Break room", "Janitor's closet", "Port marketplace", "None", "None", "None", ["supply crate", "fuel canister"]];
         
-        let closet: [Any] = ["Janitor's closet", "None", "None", "None", "Supply depot", "None", "None", ["Break room key"]]
+        let closet: [Any] = ["Janitor's closet", "None", "None", "None", "Supply depot", "None", "None", ["break room key"]]
         
-        let breakRoom: [Any] = ["Break room", "None", "None", "Supply depot", "None", "None", "None", ["Suspicious blender"]]
+        let breakRoom: [Any] = ["Break room", "None", "None", "Supply depot", "None", "None", "None", ["suspicious blender"]]
         
-        let mechanicShop: [Any] = ["Mechanic shop", "None", "Port marketplace", "None", "None", "None", "None", ["Toolbox", "Maitenance robot"]];
+        let mechanicShop: [Any] = ["Mechanic shop", "None", "Port marketplace", "None", "None", "None", "None", ["toolbox", "maintenance robot"]];
         
-        let restaurant: [Any] = ["Noodles restaurant", "Port marketplace", "None", "None", "None", "Attic", "None", ["Hot meal"]];
+        let restaurant: [Any] = ["Noodles restaurant", "Port marketplace", "None", "None", "None", "Attic", "None", ["hot meal"]];
         
-        let attic: [Any] = ["Attic", "None", "None", "None", "None", "None", "Noodles restaurant", ["Blankets"]]
+        let attic: [Any] = ["Attic", "None", "None", "None", "None", "None", "Noodles restaurant", ["blankets"]]
         
-        let spaceship: [Any] = ["Spaceship", "Hangar", "None", "None", "Spaceship living room", "None", "None", ["None"]];
+        let spaceship: [Any] = ["Spaceship", "Hangar", "None", "None", "Spaceship living room", "None", "None", ["none"]];
         
-        let livingRoom: [Any] = ["Spaceship living room", "None", "Spaceship", "None", "None", "None", "None", ["Brand new rifle"]];
+        let livingRoom: [Any] = ["Spaceship living room", "None", "Spaceship", "None", "None", "None", "None", ["brand new rifle"]];
         
         floorPlan.append(createRoom(roomInfo: hangar))
         floorPlan.append(createRoom(roomInfo: marketplace))
@@ -78,7 +92,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     // prints the current room
     func look(){
-        printOutput(outputText: "You are currently in the \(current.name)")
+        commandOutput.text = "You are currently in the \(current.name)"
         commandOutput.text! += "\n" + getContentsOfRoom(roomName: current.name)
     }
     
@@ -100,13 +114,29 @@ class ViewController: UIViewController, UITextFieldDelegate {
         let room = getRoom(roomName: roomName)
         
         var outputString = "Contents of the room: "
+        
+        // loops once for each item in a room
         if room.contents.count > 0  {
             for item in room.contents{
-                outputString += "\n\t\(item)"
+                
+                if retrieveItem(itemName: item) != nil{
+                    let selectedItemPrice = retrieveItem(itemName: item)!.price
+                    
+                    outputString += "\n\t\(item), Price: "
+                    if selectedItemPrice == 0{
+                        outputString += "free"
+                    }
+                    else{
+                        outputString += String(selectedItemPrice)
+                    }
+                }
+                else{
+                    outputString += "\n\t\(item)"
+                }
             }
         }
         else {
-            outputString += "\n\t Nothing"
+            outputString += "\n\t none"
         }
         
         return outputString
@@ -120,31 +150,37 @@ class ViewController: UIViewController, UITextFieldDelegate {
     }
     
     func pickup(item: String){
-        // checks to make sure that the item is in the room
-        if !current.contents.contains(item){
-            commandOutput.text = "That item is not in this room."
-            return
+        let roomHasItem = current.contents.contains(item.lowercased())
+        
+        if inventory.contains(item) {
+            commandOutput.text = "You can't pick up an item you already own."
         }
-        if current.contents.contains(item){
+        // checks to make sure that the item is in the room
+        else if roomHasItem && item.lowercased() != "none"{
             inventory.append(item)
-            printOutput(outputText: "You now have the \(item). ")
+            commandOutput.text = "You now have the \(item). "
+            current.contents.remove(at: current.contents.firstIndex(of: item)!)
+            
+            let selectedItem = retrieveItem(itemName: item)
+            if selectedItem != nil && selectedItem!.price == 0{
+                selectedItem!.hasPaid = true
+            }
         }
         else{
-            printOutput(outputText: "That item is not in this room.")
+            commandOutput.text = "That item is not in this room."
         }
     }
     
     func drop(item: String){
         if let index = inventory.firstIndex(of: item) {
-            
             //
-            current.contents.append(inventory[index])
+            current.contents.append(item)
             
             inventory.remove(at: index)
-            printOutput(outputText: "You have dropped the \(item).")
+            commandOutput.text = "You have dropped the \(item)."
         }
         else{
-            printOutput(outputText: "You don’t have that item.")
+            commandOutput.text = "You don’t have that item."
         }
     }
     
@@ -167,52 +203,96 @@ class ViewController: UIViewController, UITextFieldDelegate {
         }
         
         if(newRoomName.lowercased() == "none"){ // checks if there is no room in the direction
-            printOutput(outputText: "You can't move in that direction!")
+            commandOutput.text = "You can't move in that direction!"
             return current
         }
+        else if newRoomName.lowercased() == "break room"{
+            if !inventory.contains("break room key"){
+                commandOutput.text = "You need the break room key."
+                return current
+            }
+            else{
+                commandOutput.text = "You are now in the \(newRoomName)."
+                return getRoom(roomName: newRoomName)
+            }
+        }
         else if !checkPurchase(){ // checks for if the user bought all their inventory
-            printOutput(outputText: "Hey! You need to pay for that!")
+            if inventory.contains("blankets"){
+                commandOutput.text = "You hear the owner yell: \"Hey! Put the blankets back!\""
+            }
+            else{
+                commandOutput.text = "Hey! You need to pay for that!"
+            }
             return current
         }
         else{
             current = getRoom(roomName: newRoomName)
             
-            printOutput(outputText: "You are now in the \(newRoomName).")
+            commandOutput.text = "You are now in the \(newRoomName)."
             return current
         }
     }
     
     // buys an item that the user has in inventory
     func buy(itemName: String){
-        var willBuy = true
-        printOutput(outputText:"Are you sure you want to buy the \(itemName)? (Y/N)")
+        guard let itemToBuy = retrieveItem(itemName: itemName)
+        else {
+            return
+        }
         
-        // reduces the user's credit amount by the item's price
-        if willBuy && inventory.contains(itemName) {
-            credits -= retrieveItem(itemName: itemName).price
+        if !current.contents.contains(itemName) && !inventory.contains(itemName){
+            commandOutput.text = "That item is not in the room"
+            return
+        }
+        else if itemToBuy.hasPaid {
+            commandOutput.text = "You can't buy an item you already own."
+        }
+        else if itemToBuy.name == "blankets"{
+            commandOutput.text = "Those blankets belong to the owner."
+        }
+        else if credits - itemToBuy.price >= 0{
+            credits -= itemToBuy.price
+            itemToBuy.hasPaid = true
+            creditAmount.text = "Credits: \(credits)"
+            commandOutput.text = "You bought the \(itemName)"
+            
+            if current.contents.contains(itemName){
+                current.contents.remove(at: current.contents.firstIndex(of: itemName)!)
+            }
+            inventory.append(itemName)
         }
         else{
-            printOutput(outputText: "There was an error buying the item.")
+            commandOutput.text = "You don't have enough credits!"
         }
     }
     
     // sells an item the user has in inventory
     func sell(itemName: String){
-        var willSell = true
-        commandField.text = "Are you sure you want to sell the \(itemName)? (Y/N)"
         
-        if willSell && inventory.contains(itemName) {
-            credits += retrieveItem(itemName: itemName).price
+        guard let itemToBuy = retrieveItem(itemName: itemName)else {
+            return
+        }
+        // checks if the object can be sold
+        if itemToBuy.hasPaid && inventory.contains(itemName){
+            
+            credits += itemToBuy.price
+            itemToBuy.hasPaid = false
+            creditAmount.text = "Credits: \(credits)"
+            commandOutput.text = "You sold the \(itemName)"
+            inventory.remove(at: inventory.firstIndex(of: itemName)!)
+            current.contents.append(itemName)
+            
         }
         else{
-            commandOutput.text = "There was an error selling the item."
+            commandOutput.text = "You can't sell an item you don't have!"
         }
+        
     }
     
     // checks if all items in the user's inventory have been paid for
     func checkPurchase() -> Bool{
         for item in inventory{
-            if !retrieveItem(itemName: item).hasPaid{
+            if !retrieveItem(itemName: item)!.hasPaid{
                 return false
             }
         }
@@ -220,13 +300,20 @@ class ViewController: UIViewController, UITextFieldDelegate {
     }
     
     // gets the corresponding Item object when given an item's name
-    func retrieveItem(itemName: String) -> Item{
+    func retrieveItem(itemName: String) -> Item?{
+        var found: Item?
+        
         // checks that an object with the itemName exists
-        guard let found = allObjects.first(where: { $0.name == itemName }) else {
-        fatalError("Item with name \(itemName) not found")
+        if allObjects.first(where: { $0.name.lowercased() == itemName.lowercased() }) == nil{
+            commandOutput.text = "\(itemName) is not a valid item"
+            found = nil
+        }
+        else{
+            found = allObjects.first(where: { $0.name.lowercased() == itemName.lowercased() })
         }
         return found
     }
+        
     
     func getInventory() -> String{
         var outputString = "Inventory: "
@@ -242,7 +329,6 @@ class ViewController: UIViewController, UITextFieldDelegate {
         var itemArg = ""
         
         let commandFieldText = commandField.text
-        commandField.placeholder = "Command?"
         
         var commandTextSplit = commandFieldText?.components(separatedBy: " ")
         
@@ -275,7 +361,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
         case "inventory":
             commandOutput.text = getInventory()
         case "exit":
-            printOutput(outputText: "exit")
+            commandOutput.text = "exit"
         case "get":
             pickup(item: itemArg)
         case "drop":
@@ -287,14 +373,10 @@ class ViewController: UIViewController, UITextFieldDelegate {
         case "sell":
             sell(itemName: itemArg)
         default:
-            printOutput(outputText: "That's not a valid command.")
+            commandOutput.text = "That's not a valid command."
         }
     }
-    
-    func printOutput(outputText: String){
-        commandOutput.text = outputText
-    }
-    
+
     func help(){
         commandOutput.text = """
         look: display the name of the current room and its contents

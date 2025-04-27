@@ -49,8 +49,13 @@ class ViewController: UIViewController, UITextFieldDelegate {
         displayAllRooms()
         
         creditAmount.text = "Credits: \(credits)"
-        commandField.placeholder = "Command output"
-        look()
+        startText()
+    }
+    
+    // Called when the user clicks on the view outside of the UITextField
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        self.view.endEditing(true)
     }
     
     // creates the building data structure
@@ -122,7 +127,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
                 if retrieveItem(itemName: item) != nil{
                     let selectedItemPrice = retrieveItem(itemName: item)!.price
                     
-                    outputString += "\n\t\(item), Price: "
+                    outputString += "\n\t\(item), price: "
                     if selectedItemPrice == 0{
                         outputString += "free"
                     }
@@ -153,7 +158,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
         let roomHasItem = current.contents.contains(item.lowercased())
         
         if inventory.contains(item) {
-            commandOutput.text = "You can't pick up an item you already own."
+            commandOutput.text = "You can't pick up an item you already have."
         }
         // checks to make sure that the item is in the room
         else if roomHasItem && item.lowercased() != "none"{
@@ -162,7 +167,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
             current.contents.remove(at: current.contents.firstIndex(of: item)!)
             
             let selectedItem = retrieveItem(itemName: item)
-            if selectedItem != nil && selectedItem!.price == 0{
+            if selectedItem != nil && selectedItem!.price == 0 && item != "blankets"{
                 selectedItem!.hasPaid = true
             }
         }
@@ -217,6 +222,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
             }
         }
         else if !checkPurchase(){ // checks for if the user bought all their inventory
+            print(inventory)
             if inventory.contains("blankets"){
                 commandOutput.text = "You hear the owner yell: \"Hey! Put the blankets back!\""
             }
@@ -254,12 +260,14 @@ class ViewController: UIViewController, UITextFieldDelegate {
             credits -= itemToBuy.price
             itemToBuy.hasPaid = true
             creditAmount.text = "Credits: \(credits)"
-            commandOutput.text = "You bought the \(itemName)"
+            commandOutput.text = "You bought the \(itemName)."
             
             if current.contents.contains(itemName){
                 current.contents.remove(at: current.contents.firstIndex(of: itemName)!)
             }
-            inventory.append(itemName)
+            if !inventory.contains(itemName){
+                inventory.append(itemName)
+            }
         }
         else{
             commandOutput.text = "You don't have enough credits!"
@@ -278,13 +286,15 @@ class ViewController: UIViewController, UITextFieldDelegate {
             credits += itemToBuy.price
             itemToBuy.hasPaid = false
             creditAmount.text = "Credits: \(credits)"
-            commandOutput.text = "You sold the \(itemName)"
+            commandOutput.text = "You sold the \(itemName)."
             inventory.remove(at: inventory.firstIndex(of: itemName)!)
-            current.contents.append(itemName)
             
+            if itemName != "brand new rifle"{
+                current.contents.append(itemName)
+            }
         }
         else{
-            commandOutput.text = "You can't sell an item you don't have!"
+            commandOutput.text = "You can't sell an item you don't own or have in your inventory!"
         }
         
     }
@@ -292,6 +302,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
     // checks if all items in the user's inventory have been paid for
     func checkPurchase() -> Bool{
         for item in inventory{
+            print(retrieveItem(itemName: item)!.hasPaid)
             if !retrieveItem(itemName: item)!.hasPaid{
                 return false
             }
@@ -376,7 +387,22 @@ class ViewController: UIViewController, UITextFieldDelegate {
             commandOutput.text = "That's not a valid command."
         }
     }
-
+    
+    // text that loads at the start of the game
+    func startText(){
+        commandOutput.text = """
+        Welcome to this small corner of the galaxy!
+        You currently need some supplies:
+            1. A fuel canister
+            2. A supply crate
+            3. A new maintenance robot
+        
+        Then you can continue on your journey!
+        
+        "You are currently in the \(current.name)"
+        """
+    }
+    
     func help(){
         commandOutput.text = """
         look: display the name of the current room and its contents
@@ -387,8 +413,10 @@ class ViewController: UIViewController, UITextFieldDelegate {
         up: move up
         down: move down
         inventory: list what items you’re currently carrying
-        get item: pick up an item currently in the room
-        drop item: drop an item you’re currently carrying
+        buy ITEM: buy an item in the room
+        sell ITEM: sell an item in your inventory
+        get ITEM: pick up an item currently in the room
+        drop ITEM: drop an item you’re currently carrying
         help: print this list
         exit: quit the game
         """

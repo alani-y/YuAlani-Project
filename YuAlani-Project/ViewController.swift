@@ -9,6 +9,10 @@
 //
 
 import UIKit
+import CoreData
+
+let appDelegate = UIApplication.shared.delegate as! AppDelegate
+let context = appDelegate.persistentContainer.viewContext
 
 var floorPlan = [Room]()
 var current: Room = floorPlan[0]
@@ -325,7 +329,6 @@ class ViewController: UIViewController, UITextFieldDelegate {
         return found
     }
         
-    
     func getInventory() -> String{
         var outputString = "Inventory: "
         for item in inventory{
@@ -399,11 +402,92 @@ class ViewController: UIViewController, UITextFieldDelegate {
         
         Then you can continue on your journey!
         
-        "You are currently in the \(current.name)"
+        You are currently in the \(current.name)
         """
     }
     
+    // exits to the loading screen
+    func exit(){
+        
+    }
+    
+    // stores the core data info for the inventory and room location
+    func storeRoomAndInventory(roomLocation: String, roomContents: [String], inventory: [String]){
+        let room = NSEntityDescription.insertNewObject(forEntityName: "CurrentRoom", into: context)
+        
+        let inventory = NSEntityDescription.insertNewObject(forEntityName: "Inventory", into: context)
+        
+        room.setValue(roomLocation, forKey: "roomLocation")
+        room.setValue(roomContents, forKey: "roomContents")
+        inventory.setValue(inventory, forKey: "items")
+    }
+    
+    // saves the core data
+    func saveContext () {
+        if context.hasChanges {
+            do {
+                try context.save()
+            } catch {
+                let nserror = error as NSError
+                fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
+            }
+        }
+    }
+    
+    // clears all the core data
+    func clearCoreData() {
+        let request = NSFetchRequest<NSFetchRequestResult>(entityName: "Person")
+        var fetchedResults:[NSManagedObject]
+        
+        do {
+            try fetchedResults = context.fetch(request) as! [NSManagedObject]
+            
+            if fetchedResults.count > 0 {
+                for result in fetchedResults {
+                    context.delete(result)
+                    print("\(result.value(forKey: "name")!) has been deleted")
+                }
+            }
+            saveContext()
+            
+        } catch {
+            print("Error occurred while clearing data")
+            abort()
+        }
+    }
+    
+    // retrieves each room's saved info
+    func retrieveRoomInfo() -> [NSManagedObject] {
+        let roomRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "CurrentRoom")
+        var fetchedRoomResults:[NSManagedObject]?
+        
+        do {
+            try fetchedRoomResults = context.fetch(roomRequest) as? [NSManagedObject]
+        } catch {
+            print("Error occurred while retrieving data")
+            abort()
+        }
+        
+        return(fetchedRoomResults)!
+    }
+    
+    // retrieves the user's inventory
+    func retrieveInventory() -> [NSManagedObject] {
+        let roomRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "CurrentRoom")
+        var fetchedResults:[NSManagedObject]?
+        
+        do {
+            try fetchedResults = context.fetch(roomRequest) as? [NSManagedObject]
+        } catch {
+            print("Error occurred while retrieving data")
+            abort()
+        }
+        
+        return(fetchedResults)!
+    }
+    
     func help(){
+        commandOutput.font = UIFont(name: "DIN Alternate", size: CGFloat(15.0))
         commandOutput.text = """
         look: display the name of the current room and its contents
         north: move north

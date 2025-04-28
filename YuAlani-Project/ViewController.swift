@@ -27,8 +27,7 @@ var allObjects: [Item] = [
     Item(name: "hot meal", price: 20, hasPaid: false),
     Item(name: "blankets", price: 0, hasPaid: false),
     Item(name: "brand new rifle", price: 600, hasPaid: true),
-    Item(name: "maintenance robot", price: 500, hasPaid: false),
-    Item(name: "none", price: 0, hasPaid: true)
+    Item(name: "maintenance robot", price: 500, hasPaid: false)
 ]
 
 // the amount of credits the user has
@@ -49,11 +48,13 @@ class ViewController: UIViewController, UITextFieldDelegate {
         loadMap()
         displayAllRooms()
         
-        creditAmount.text = "Credits: \(credits)"
-        startText()
-        
         if defaults.bool(forKey: "hasSaveData"){
             loadGame()
+            look()
+        }
+        else{
+            creditAmount.text = "Credits: \(credits)"
+            startText()
         }
     }
     
@@ -100,18 +101,27 @@ class ViewController: UIViewController, UITextFieldDelegate {
         // loads the saved inventory
         if let retrievedInventory = defaults.array(forKey: "inventory") as? [String]{
             inventory = retrievedInventory
+            for item in inventory{
+                let itemObject = retrieveItem(itemName: item)
+                itemObject!.hasPaid = defaults.bool(forKey: "\(item)hasPaid")
+            }
         }
         else{
-            print("There was an error loading the inventory")
+            print("error loading the inventory")
         }
+        
         // loads the user's credits amount
         credits = defaults.integer(forKey: "credits")
+        creditAmount.text = "Credits: \(credits)"
+        print("retrieved \(credits)")
+        
         // loads the saved current room
         if let retrievedCurrent = defaults.string(forKey: "currentRoom"){
             current = getRoom(roomName: retrievedCurrent)
+            print(current.name)
         }
         else{
-            print("There was an error loading the current room")
+            print("error loading the current room")
         }
         // loads the saved room contents
         if let retrievedRooms = defaults.dictionary(forKey: "rooms") as? [String : [String]]{
@@ -122,7 +132,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
             }
         }
         else{
-            print("There was an error loading the room contents")
+            print("error loading the room contents")
         }
     }
     
@@ -132,6 +142,8 @@ class ViewController: UIViewController, UITextFieldDelegate {
         defaults.set(inventory, forKey: "inventory")
         // save credits
         defaults.set(credits, forKey: "credits")
+        print(credits)
+        
         // save current room name
         defaults.set(current.name, forKey: "currentRoom")
         // saves the contents for each room
@@ -141,6 +153,11 @@ class ViewController: UIViewController, UITextFieldDelegate {
         }
         defaults.set(roomContentsDict, forKey: "rooms")
         defaults.set(true, forKey: "hasSaveData")
+        
+        for item in inventory{
+            defaults.set(retrieveItem(itemName: item)!.hasPaid, forKey: "\(item)hasPaid")
+        }
+        
         print("saved game")
     }
     
@@ -175,9 +192,8 @@ class ViewController: UIViewController, UITextFieldDelegate {
         var outputString = "Contents of the room: "
         
         // loops once for each item in a room
-        if room.contents.count > 0  {
+        if room.contents.count > 0 && room.contents[0] != "none"{
             for item in room.contents{
-                
                 if retrieveItem(itemName: item) != nil{
                     let selectedItemPrice = retrieveItem(itemName: item)!.price
                     
@@ -429,8 +445,10 @@ class ViewController: UIViewController, UITextFieldDelegate {
             saveGame()
         case "inventory":
             commandOutput.text = getInventory()
+        case "take off":
+            takeOff()
         case "exit":
-            commandOutput.text = "exit"
+            exit()
         case "get":
             pickup(item: itemArg)
             saveGame()
@@ -465,14 +483,83 @@ class ViewController: UIViewController, UITextFieldDelegate {
         """
     }
     
-    // exits to the loading screen
-    func exit(){
+    // erases playthrough data
+    func exit() {
+        let controller = UIAlertController(
+            title: "WARNING!",
+            message: "THIS WILL ERASE YOUR GAME DATA. ARE YOU SURE?",
+            preferredStyle: .alert)
         
+        controller.addAction(UIAlertAction( title: "No, take me back", style: .cancel))
+        controller.addAction(UIAlertAction(title: "Yes, proceed", style: .destructive) { (alert) in self.resetGame()})
+        
+        present(controller, animated: true)
     }
     
+    func resetGame(){
+        defaults.removeObject(forKey: "inventory")
+        defaults.removeObject(forKey: "credits")
+        defaults.removeObject(forKey: "currentRoom")
+        defaults.removeObject(forKey: "rooms")
+        defaults.removeObject(forKey: "hasSaveData")
+        
+        inventory = []
+        credits = 500
+        current = floorPlan[0]
+        
+        // resets supply depot items
+        floorPlan[2].contents = ["supply crate", "fuel canister"]
+        
+        // resets closet items
+        floorPlan[3].contents = ["break room key"]
+        
+        // resets break room items
+        floorPlan[4].contents = ["suspicious blender"]
+        
+        // resets mechanic shop items
+        floorPlan[5].contents = ["toolbox", "maintenance robot"]
+        
+        // resets restaurant items
+        floorPlan[6].contents = ["hot meal"]
+        
+        // resets attic contents
+        floorPlan[7].contents = ["blankets"]
+        
+        // resets spaceship living room contents
+        floorPlan[9].contents = ["brand new rifle"]
+        
+        for item in allObjects{
+            if item.name != "brand new rifle"{
+                item.hasPaid = false
+            }
+            else{
+                item.hasPaid = true
+            }
+        }
+        commandOutput.text = "Welcome back, traveler!"
+        startText()
+        creditAmount.text = "Credits: \(credits)"
+    }
+    
+    // completes the game
+    func takeOff(){
+        let requiredItems = ["fuel canister", "supply crate", "maintenance robot"]
+        if current.name != "Spaceship"{
+            commandOutput.text = "You need to be in the spaceship to take off!"
+        }
+        // checks if the users inventory has all the required items
+        else if !inventory.allSatisfy({ inventory.contains($0)}){
+            let missingItems = requiredItems.filter { !inventory.contains($0) }
+
+            commandOutput.text = "You can't take off yet! You still need \(missingItems.joined(separator: ", "))"
+        }
+        else{
+            commandOutput.text = "Yay! You're ready for take off! \nEnter 'exit' to start a new playthrough."
+        }
+    }
     
     func help(){
-        commandOutput.font = UIFont(name: "DIN Alternate", size: CGFloat(15.0))
+        //commandOutput.font = UIFont(name: "DIN Alternate", size: CGFloat(15.0))
         commandOutput.text = """
         look: display the name of the current room and its contents
         north: move north
@@ -481,13 +568,14 @@ class ViewController: UIViewController, UITextFieldDelegate {
         west: move west
         up: move up
         down: move down
+        take off: get ready for take off
         inventory: list what items you’re currently carrying
         buy ITEM: buy an item in the room
         sell ITEM: sell an item in your inventory
         get ITEM: pick up an item currently in the room
         drop ITEM: drop an item you’re currently carrying
         help: print this list
-        exit: quit the game
+        exit: resets the playthrough
         """
     }
 }

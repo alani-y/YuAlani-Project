@@ -1,3 +1,6 @@
+// Project: YuAlani-Project
+// EID: ay7892
+// Course: CS329E
 //
 //  SceneDelegate.swift
 //  YuAlani-Project

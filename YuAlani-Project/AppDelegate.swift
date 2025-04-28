@@ -1,4 +1,6 @@
-//
+// Project: YuAlani-Project
+// EID: ay7892
+// Course: CS329E//
 //  AppDelegate.swift
 //  YuAlani-Project
 //

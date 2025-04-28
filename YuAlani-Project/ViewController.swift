@@ -19,7 +19,7 @@ var inventory: [String] = []
 
 // stores all objects in the game
 var allObjects: [Item] = [
-    Item(name: "supply crate", price: 0, hasPaid: false),
+    Item(name: "supply crate", price: 70, hasPaid: false),
     Item(name: "fuel canister", price: 100, hasPaid: false),
     Item(name: "break room key", price: 0, hasPaid: false),
     Item(name: "suspicious blender", price: 99, hasPaid: false),
@@ -35,14 +35,14 @@ var credits: Int = 500
 
 class ViewController: UIViewController, UITextFieldDelegate {
     
+    @IBOutlet weak var imageView: UIImageView!
     @IBOutlet weak var commandField: UITextField!
-    @IBOutlet weak var commandOutput: UILabel!
+    @IBOutlet weak var outputArea: UILabel!
     @IBOutlet weak var creditAmount: UILabel!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         commandField.delegate = self
-        commandField.placeholder = "Command?"
         
         // Do any additional setup after loading the view.
         loadMap()
@@ -54,6 +54,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
         }
         else{
             creditAmount.text = "Credits: \(credits)"
+            imageView.image = UIImage(named: "\(current.name.lowercased())")
             startText()
         }
     }
@@ -66,23 +67,23 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     // creates the building data structure
     func loadMap(){
-        let hangar: [Any] = ["Hangar", "None", "None", "Spaceship", "Port marketplace", "None", "None", ["none"]];
-        let marketplace: [Any] = ["Port marketplace", "Supply depot", "Hangar", "Noodles restaurant", "Mechanic shop", "None", "None", ["none"]];
-        let supplyDepot: [Any] = ["Supply depot", "Break room", "Janitor's closet", "Port marketplace", "None", "None", "None", ["supply crate", "fuel canister"]];
+        let hangar: [Any] = ["hangar", "None", "None", "Spaceship", "Port marketplace", "None", "None", ["none"]];
+        let marketplace: [Any] = ["port marketplace", "Supply depot", "Hangar", "Noodles restaurant", "Mechanic shop", "None", "None", ["none"]];
+        let supplyDepot: [Any] = ["supply depot", "Break room", "Janitor's closet", "Port marketplace", "None", "None", "None", ["supply crate", "fuel canister"]];
         
-        let closet: [Any] = ["Janitor's closet", "None", "None", "None", "Supply depot", "None", "None", ["break room key"]]
+        let closet: [Any] = ["janitor's closet", "None", "None", "None", "Supply depot", "None", "None", ["break room key"]]
         
-        let breakRoom: [Any] = ["Break room", "None", "None", "Supply depot", "None", "None", "None", ["suspicious blender"]]
+        let breakRoom: [Any] = ["break room", "None", "None", "Supply depot", "None", "None", "None", ["suspicious blender"]]
         
-        let mechanicShop: [Any] = ["Mechanic shop", "None", "Port marketplace", "None", "None", "None", "None", ["toolbox", "maintenance robot"]];
+        let mechanicShop: [Any] = ["mechanic shop", "None", "Port marketplace", "None", "None", "None", "None", ["toolbox", "maintenance robot"]];
         
-        let restaurant: [Any] = ["Noodles restaurant", "Port marketplace", "None", "None", "None", "Attic", "None", ["hot meal"]];
+        let restaurant: [Any] = ["noodles restaurant", "Port marketplace", "None", "None", "None", "Attic", "None", ["hot meal"]];
         
-        let attic: [Any] = ["Attic", "None", "None", "None", "None", "None", "Noodles restaurant", ["blankets"]]
+        let attic: [Any] = ["attic", "None", "None", "None", "None", "None", "Noodles restaurant", ["blankets"]]
         
-        let spaceship: [Any] = ["Spaceship", "Hangar", "None", "None", "Spaceship living room", "None", "None", ["none"]];
+        let spaceship: [Any] = ["spaceship", "Hangar", "None", "None", "Spaceship living room", "None", "None", ["none"]];
         
-        let livingRoom: [Any] = ["Spaceship living room", "None", "Spaceship", "None", "None", "None", "None", ["brand new rifle"]];
+        let livingRoom: [Any] = ["spaceship living room", "None", "Spaceship", "None", "None", "None", "None", ["brand new rifle"]];
         
         floorPlan.append(createRoom(roomInfo: hangar))
         floorPlan.append(createRoom(roomInfo: marketplace))
@@ -98,6 +99,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     // loads pre-existing save data
     func loadGame(){
+        
         // loads the saved inventory
         if let retrievedInventory = defaults.array(forKey: "inventory") as? [String]{
             inventory = retrievedInventory
@@ -118,7 +120,9 @@ class ViewController: UIViewController, UITextFieldDelegate {
         // loads the saved current room
         if let retrievedCurrent = defaults.string(forKey: "currentRoom"){
             current = getRoom(roomName: retrievedCurrent)
-            print(current.name)
+            
+            imageView.image = UIImage(named: "\(current.name.lowercased())")
+            print(current.name.lowercased())
         }
         else{
             print("error loading the current room")
@@ -168,8 +172,8 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     // prints the current room
     func look(){
-        commandOutput.text = "You are currently in the \(current.name)"
-        commandOutput.text! += "\n" + getContentsOfRoom(roomName: current.name)
+        outputArea.text = "You are currently in the \(current.name)"
+        outputArea.text! += "\n" + getContentsOfRoom(roomName: current.name)
     }
     
     // gets the corresponding room object when given its name
@@ -228,12 +232,12 @@ class ViewController: UIViewController, UITextFieldDelegate {
         let roomHasItem = current.contents.contains(item.lowercased())
         
         if inventory.contains(item) {
-            commandOutput.text = "You can't pick up an item you already have."
+            outputArea.text = "You can't pick up an item you already have."
         }
         // checks to make sure that the item is in the room
         else if roomHasItem && item.lowercased() != "none"{
             inventory.append(item)
-            commandOutput.text = "You now have the \(item). "
+            outputArea.text = "You now have the \(item). "
             current.contents.remove(at: current.contents.firstIndex(of: item)!)
             
             let selectedItem = retrieveItem(itemName: item)
@@ -242,7 +246,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
             }
         }
         else{
-            commandOutput.text = "That item is not in this room."
+            outputArea.text = "That item is not in this room."
         }
     }
     
@@ -252,10 +256,10 @@ class ViewController: UIViewController, UITextFieldDelegate {
             current.contents.append(item)
             
             inventory.remove(at: index)
-            commandOutput.text = "You have dropped the \(item)."
+            outputArea.text = "You have dropped the \(item)."
         }
         else{
-            commandOutput.text = "You don’t have that item."
+            outputArea.text = "You don’t have that item."
         }
     }
     
@@ -278,33 +282,35 @@ class ViewController: UIViewController, UITextFieldDelegate {
         }
         
         if(newRoomName.lowercased() == "none"){ // checks if there is no room in the direction
-            commandOutput.text = "You can't move in that direction!"
+            outputArea.text = "You can't move in that direction!"
             return current
         }
         else if newRoomName.lowercased() == "break room"{
             if !inventory.contains("break room key"){
-                commandOutput.text = "You need the break room key."
+                outputArea.text = "You need the break room key."
                 return current
             }
             else{
-                commandOutput.text = "You are now in the \(newRoomName)."
+                outputArea.text = "You are now in the \(newRoomName)."
+                imageView.image = UIImage(named: "\(current.name.lowercased())")
                 return getRoom(roomName: newRoomName)
             }
         }
         else if !checkPurchase(){ // checks for if the user bought all their inventory
             print(inventory)
             if inventory.contains("blankets"){
-                commandOutput.text = "You hear the owner yell: \"Hey! Put the blankets back!\""
+                outputArea.text = "You hear the owner yell: \"Hey! Put the blankets back!\""
             }
             else{
-                commandOutput.text = "Hey! You need to pay for that!"
+                outputArea.text = "\"Hey! You need to pay for that!\""
             }
             return current
         }
         else{
             current = getRoom(roomName: newRoomName)
             
-            commandOutput.text = "You are now in the \(newRoomName)."
+            outputArea.text = "You are now in the \(newRoomName)."
+            imageView.image = UIImage(named: "\(current.name.lowercased())")
             return current
         }
     }
@@ -317,20 +323,20 @@ class ViewController: UIViewController, UITextFieldDelegate {
         }
         
         if !current.contents.contains(itemName) && !inventory.contains(itemName){
-            commandOutput.text = "That item is not in the room."
+            outputArea.text = "That item is not in the room."
             return
         }
         else if itemToBuy.hasPaid {
-            commandOutput.text = "You can't buy an item you already own."
+            outputArea.text = "You can't buy an item you already own."
         }
         else if itemToBuy.name == "blankets"{
-            commandOutput.text = "Those blankets belong to the owner."
+            outputArea.text = "Those blankets belong to the owner."
         }
         else if credits - itemToBuy.price >= 0{
             credits -= itemToBuy.price
             itemToBuy.hasPaid = true
             creditAmount.text = "Credits: \(credits)"
-            commandOutput.text = "You bought the \(itemName)."
+            outputArea.text = "You bought the \(itemName)."
             
             if current.contents.contains(itemName){
                 current.contents.remove(at: current.contents.firstIndex(of: itemName)!)
@@ -340,7 +346,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
             }
         }
         else{
-            commandOutput.text = "You don't have enough credits!"
+            outputArea.text = "You don't have enough credits!"
         }
     }
     
@@ -356,7 +362,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
             credits += itemToBuy.price
             itemToBuy.hasPaid = false
             creditAmount.text = "Credits: \(credits)"
-            commandOutput.text = "You sold the \(itemName)."
+            outputArea.text = "You sold the \(itemName)."
             inventory.remove(at: inventory.firstIndex(of: itemName)!)
             
             if itemName != "brand new rifle"{
@@ -364,7 +370,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
             }
         }
         else{
-            commandOutput.text = "You can't sell an item you don't own or have in your inventory!"
+            outputArea.text = "You can't sell an item you don't own or have in your inventory!"
         }
     }
     
@@ -385,7 +391,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
         
         // checks that an object with the itemName exists
         if allObjects.first(where: { $0.name.lowercased() == itemName.lowercased() }) == nil{
-            commandOutput.text = "\(itemName) is not a valid item"
+            outputArea.text = "\(itemName) is not a valid item"
             found = nil
         }
         else{
@@ -444,8 +450,8 @@ class ViewController: UIViewController, UITextFieldDelegate {
             current = move(direction: "down")
             saveGame()
         case "inventory":
-            commandOutput.text = getInventory()
-        case "take off":
+            outputArea.text = getInventory()
+        case "takeoff":
             takeOff()
         case "exit":
             exit()
@@ -464,15 +470,15 @@ class ViewController: UIViewController, UITextFieldDelegate {
             sell(itemName: itemArg)
             saveGame()
         default:
-            commandOutput.text = "That's not a valid command."
+            outputArea.text = "That's not a valid command."
         }
     }
     
     // text that loads at the start of the game
     func startText(){
-        commandOutput.text = """
+        outputArea.text = """
         Welcome to this small corner of the galaxy!
-        You currently need some supplies:
+        You currently need some supplies before you can takeoff:
             1. A fuel canister
             2. A supply crate
             3. A new maintenance robot
@@ -536,7 +542,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
                 item.hasPaid = true
             }
         }
-        commandOutput.text = "Welcome back, traveler!"
+        outputArea.text = "Welcome back, traveler!"
         startText()
         creditAmount.text = "Credits: \(credits)"
     }
@@ -545,22 +551,21 @@ class ViewController: UIViewController, UITextFieldDelegate {
     func takeOff(){
         let requiredItems = ["fuel canister", "supply crate", "maintenance robot"]
         if current.name != "Spaceship"{
-            commandOutput.text = "You need to be in the spaceship to take off!"
+            outputArea.text = "You need to be in the spaceship to take off!"
         }
         // checks if the users inventory has all the required items
-        else if !inventory.allSatisfy({ inventory.contains($0)}){
+        else if !inventory.allSatisfy({ requiredItems.contains($0)}){
             let missingItems = requiredItems.filter { !inventory.contains($0) }
-
-            commandOutput.text = "You can't take off yet! You still need \(missingItems.joined(separator: ", "))"
+            outputArea.text = "You can't take off yet! You still need the \(missingItems.joined(separator: ", "))"
         }
         else{
-            commandOutput.text = "Yay! You're ready for take off! \nEnter 'exit' to start a new playthrough."
+            outputArea.text = "Yay! You're ready for take off! \nEnter 'exit' to start a new playthrough."
         }
     }
     
     func help(){
-        //commandOutput.font = UIFont(name: "DIN Alternate", size: CGFloat(15.0))
-        commandOutput.text = """
+        //outputArea.font = UIFont(name: "DIN Alternate", size: CGFloat(15.0))
+        outputArea.text = """
         look: display the name of the current room and its contents
         north: move north
         east: move east
@@ -568,7 +573,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
         west: move west
         up: move up
         down: move down
-        take off: get ready for take off
+        takeoff: get ready for takeoff
         inventory: list what items you’re currently carrying
         buy ITEM: buy an item in the room
         sell ITEM: sell an item in your inventory

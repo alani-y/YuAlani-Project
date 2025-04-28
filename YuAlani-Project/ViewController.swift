@@ -92,6 +92,64 @@ class ViewController: UIViewController, UITextFieldDelegate {
         floorPlan.append(createRoom(roomInfo: attic))
         floorPlan.append(createRoom(roomInfo: spaceship))
         floorPlan.append(createRoom(roomInfo: livingRoom))
+        
+        for room in floorPlan{
+            print(room.name)
+            storeGameInfo(roomContents: room.contents, inventory: inventory, current: current.name, credits: credits, roomName: room.name)
+            print("\(room.name) objected created")
+        }
+        
+        updateInventory()
+        updateRoom()
+        updatePlayer()
+    }
+    
+    // updates the inventory with the associated core data entity's info
+    func updateInventory(){
+        //storeGameInfo(roomContents: getRoom(roomName: direction).contents, inventory: inventory, current: current.name, credits: credits, roomName: newRoomName)
+        let fetchedResult = retrieveCoreDataInfo(entName: "Inventory")![0]
+        
+        if let retrievedItems = (fetchedResult.value(forKey: "items") as? [String]){
+            inventory = retrievedItems
+        }
+    }
+    
+    // updates the rooms with the saved core data info about the room's contents
+    func updateRoom(){
+        let fetchedResult = retrieveCoreDataInfo(entName: "RoomEntity")!
+
+        for roomData in fetchedResult {
+            // Safely retrieve the roomName value
+            if let retrievedRoomName = roomData.value(forKey: "roomName") as? String {
+                // Retrieve the roomContents attribute (assuming it's a transformable array of strings)
+                if let retrievedRoomContents = roomData.value(forKey: "roomContents") as? [String] {
+                    // Call your function with the array of strings
+                    getRoom(roomName: retrievedRoomName).contents = retrievedRoomContents
+                } else {
+                    print("No valid roomContents array found for room \(retrievedRoomName)")
+                }
+            } else {
+                print("No valid roomName found")
+            }
+        }
+    }
+    
+    // updates the player info from core data
+    func updatePlayer(){
+        let fetchedPlayerCredits = retrieveCoreDataInfo(entName: "Player")![0]
+        let fetchedPlayerCurrent = retrieveCoreDataInfo(entName: "Player")![1]
+        
+        if let retrievedPlayerCredits = fetchedPlayerCredits.value(forKey: "credits"){
+            credits = retrievedPlayerCredits as! Int
+            
+        } else{
+            print("player credits error")
+        }
+        if let retrievedPlayerCurrent = fetchedPlayerCurrent.value(forKey: "current"){
+            current = getRoom(roomName: retrievedPlayerCurrent as! String)
+        } else {
+            print("getting current room error")
+        }
     }
     
     // creates a room object
@@ -251,7 +309,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
         }
         
         if !current.contents.contains(itemName) && !inventory.contains(itemName){
-            commandOutput.text = "That item is not in the room"
+            commandOutput.text = "That item is not in the room."
             return
         }
         else if itemToBuy.hasPaid {
@@ -411,15 +469,22 @@ class ViewController: UIViewController, UITextFieldDelegate {
         
     }
     
-    // stores the core data info for the inventory and room location
-    func storeRoomAndInventory(roomLocation: String, roomContents: [String], inventory: [String]){
-        let room = NSEntityDescription.insertNewObject(forEntityName: "CurrentRoom", into: context)
+    // stores the core data info for the area contents, inventory
+    // and credit amount and current location
+    func storeGameInfo(roomContents: [String], inventory: [String], current: String, credits: Int, roomName: String){
+        
+        let room = NSEntityDescription.insertNewObject(forEntityName: "RoomEntity", into: context)
         
         let inventory = NSEntityDescription.insertNewObject(forEntityName: "Inventory", into: context)
+        let player = NSEntityDescription.insertNewObject(forEntityName: "Player", into: context)
         
-        room.setValue(roomLocation, forKey: "roomLocation")
         room.setValue(roomContents, forKey: "roomContents")
+        room.setValue(roomName, forKey: "roomName")
         inventory.setValue(inventory, forKey: "items")
+        player.setValue(current, forKey: "current")
+        player.setValue(credits, forKey: "credits")
+        
+        saveContext()
     }
     
     // saves the core data
@@ -456,9 +521,23 @@ class ViewController: UIViewController, UITextFieldDelegate {
         }
     }
     
-    // retrieves each room's saved info
-    func retrieveRoomInfo() -> [NSManagedObject] {
-        let roomRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "CurrentRoom")
+    func retrieveCoreDataInfo(entName: String) -> [NSManagedObject]? {
+        let roomRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entName)
+        
+        do {
+            // Fetching results as the appropriate type
+            let fetchedRoomResults = try context.fetch(roomRequest) as? [NSManagedObject]
+            return fetchedRoomResults
+        } catch {
+            print("Error occurred while retrieving data: \(error)")
+            return nil
+        }
+    }
+
+    
+    // retrieves the info for the core data entity
+    /*func retrieveCoreDataInfo(entName: String) -> [NSManagedObject]? {
+        let roomRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entName)
         var fetchedRoomResults:[NSManagedObject]?
         
         do {
@@ -469,22 +548,8 @@ class ViewController: UIViewController, UITextFieldDelegate {
         }
         
         return(fetchedRoomResults)!
-    }
+    }*/
     
-    // retrieves the user's inventory
-    func retrieveInventory() -> [NSManagedObject] {
-        let roomRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "CurrentRoom")
-        var fetchedResults:[NSManagedObject]?
-        
-        do {
-            try fetchedResults = context.fetch(roomRequest) as? [NSManagedObject]
-        } catch {
-            print("Error occurred while retrieving data")
-            abort()
-        }
-        
-        return(fetchedResults)!
-    }
     
     func help(){
         commandOutput.font = UIFont(name: "DIN Alternate", size: CGFloat(15.0))

@@ -9,10 +9,7 @@
 //
 
 import UIKit
-import CoreData
-
-let appDelegate = UIApplication.shared.delegate as! AppDelegate
-let context = appDelegate.persistentContainer.viewContext
+let defaults = UserDefaults.standard
 
 var floorPlan = [Room]()
 var current: Room = floorPlan[0]
@@ -54,6 +51,10 @@ class ViewController: UIViewController, UITextFieldDelegate {
         
         creditAmount.text = "Credits: \(credits)"
         startText()
+        
+        if defaults.bool(forKey: "hasSaveData"){
+            loadGame()
+        }
     }
     
     // Called when the user clicks on the view outside of the UITextField
@@ -92,64 +93,55 @@ class ViewController: UIViewController, UITextFieldDelegate {
         floorPlan.append(createRoom(roomInfo: attic))
         floorPlan.append(createRoom(roomInfo: spaceship))
         floorPlan.append(createRoom(roomInfo: livingRoom))
-        
-        for room in floorPlan{
-            print(room.name)
-            storeGameInfo(roomContents: room.contents, inventory: inventory, current: current.name, credits: credits, roomName: room.name)
-            print("\(room.name) objected created")
-        }
-        
-        updateInventory()
-        updateRoom()
-        updatePlayer()
     }
     
-    // updates the inventory with the associated core data entity's info
-    func updateInventory(){
-        //storeGameInfo(roomContents: getRoom(roomName: direction).contents, inventory: inventory, current: current.name, credits: credits, roomName: newRoomName)
-        let fetchedResult = retrieveCoreDataInfo(entName: "Inventory")![0]
-        
-        if let retrievedItems = (fetchedResult.value(forKey: "items") as? [String]){
-            inventory = retrievedItems
+    // loads pre-existing save data
+    func loadGame(){
+        // loads the saved inventory
+        if let retrievedInventory = defaults.array(forKey: "inventory") as? [String]{
+            inventory = retrievedInventory
         }
-    }
-    
-    // updates the rooms with the saved core data info about the room's contents
-    func updateRoom(){
-        let fetchedResult = retrieveCoreDataInfo(entName: "RoomEntity")!
-
-        for roomData in fetchedResult {
-            // Safely retrieve the roomName value
-            if let retrievedRoomName = roomData.value(forKey: "roomName") as? String {
-                // Retrieve the roomContents attribute (assuming it's a transformable array of strings)
-                if let retrievedRoomContents = roomData.value(forKey: "roomContents") as? [String] {
-                    // Call your function with the array of strings
-                    getRoom(roomName: retrievedRoomName).contents = retrievedRoomContents
-                } else {
-                    print("No valid roomContents array found for room \(retrievedRoomName)")
-                }
-            } else {
-                print("No valid roomName found")
+        else{
+            print("There was an error loading the inventory")
+        }
+        // loads the user's credits amount
+        credits = defaults.integer(forKey: "credits")
+        // loads the saved current room
+        if let retrievedCurrent = defaults.string(forKey: "currentRoom"){
+            current = getRoom(roomName: retrievedCurrent)
+        }
+        else{
+            print("There was an error loading the current room")
+        }
+        // loads the saved room contents
+        if let retrievedRooms = defaults.dictionary(forKey: "rooms") as? [String : [String]]{
+            
+            // loads the state of all room's inventory
+            for (room, roomContents) in retrievedRooms{
+                getRoom(roomName: room).contents = roomContents
             }
         }
+        else{
+            print("There was an error loading the room contents")
+        }
     }
     
-    // updates the player info from core data
-    func updatePlayer(){
-        let fetchedPlayerCredits = retrieveCoreDataInfo(entName: "Player")![0]
-        let fetchedPlayerCurrent = retrieveCoreDataInfo(entName: "Player")![1]
-        
-        if let retrievedPlayerCredits = fetchedPlayerCredits.value(forKey: "credits"){
-            credits = retrievedPlayerCredits as! Int
-            
-        } else{
-            print("player credits error")
+    // saves the game data
+    func saveGame() {
+        // saves inventory
+        defaults.set(inventory, forKey: "inventory")
+        // save credits
+        defaults.set(credits, forKey: "credits")
+        // save current room name
+        defaults.set(current.name, forKey: "currentRoom")
+        // saves the contents for each room
+        var roomContentsDict = [String: [String]]()
+        for room in floorPlan {
+            roomContentsDict[room.name] = room.contents
         }
-        if let retrievedPlayerCurrent = fetchedPlayerCurrent.value(forKey: "current"){
-            current = getRoom(roomName: retrievedPlayerCurrent as! String)
-        } else {
-            print("getting current room error")
-        }
+        defaults.set(roomContentsDict, forKey: "rooms")
+        defaults.set(true, forKey: "hasSaveData")
+        print("saved game")
     }
     
     // creates a room object
@@ -358,7 +350,6 @@ class ViewController: UIViewController, UITextFieldDelegate {
         else{
             commandOutput.text = "You can't sell an item you don't own or have in your inventory!"
         }
-        
     }
     
     // checks if all items in the user's inventory have been paid for
@@ -420,30 +411,40 @@ class ViewController: UIViewController, UITextFieldDelegate {
             look()
         case "north":
             current = move(direction: "north")
+            saveGame()
         case "east":
             current = move(direction: "east")
+            saveGame()
         case "south":
             current = move(direction: "south")
+            saveGame()
         case "west":
             current = move(direction: "west")
+            saveGame()
         case "up":
             current = move(direction: "up")
+            saveGame()
         case "down":
             current = move(direction: "down")
+            saveGame()
         case "inventory":
             commandOutput.text = getInventory()
         case "exit":
             commandOutput.text = "exit"
         case "get":
             pickup(item: itemArg)
+            saveGame()
         case "drop":
             drop(item: itemArg)
+            saveGame()
         case "help":
             help()
         case "buy":
             buy(itemName: itemArg)
+            saveGame()
         case "sell":
             sell(itemName: itemArg)
+            saveGame()
         default:
             commandOutput.text = "That's not a valid command."
         }
@@ -468,87 +469,6 @@ class ViewController: UIViewController, UITextFieldDelegate {
     func exit(){
         
     }
-    
-    // stores the core data info for the area contents, inventory
-    // and credit amount and current location
-    func storeGameInfo(roomContents: [String], inventory: [String], current: String, credits: Int, roomName: String){
-        
-        let room = NSEntityDescription.insertNewObject(forEntityName: "RoomEntity", into: context)
-        
-        let inventory = NSEntityDescription.insertNewObject(forEntityName: "Inventory", into: context)
-        let player = NSEntityDescription.insertNewObject(forEntityName: "Player", into: context)
-        
-        room.setValue(roomContents, forKey: "roomContents")
-        room.setValue(roomName, forKey: "roomName")
-        inventory.setValue(inventory, forKey: "items")
-        player.setValue(current, forKey: "current")
-        player.setValue(credits, forKey: "credits")
-        
-        saveContext()
-    }
-    
-    // saves the core data
-    func saveContext () {
-        if context.hasChanges {
-            do {
-                try context.save()
-            } catch {
-                let nserror = error as NSError
-                fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
-            }
-        }
-    }
-    
-    // clears all the core data
-    func clearCoreData() {
-        let request = NSFetchRequest<NSFetchRequestResult>(entityName: "Person")
-        var fetchedResults:[NSManagedObject]
-        
-        do {
-            try fetchedResults = context.fetch(request) as! [NSManagedObject]
-            
-            if fetchedResults.count > 0 {
-                for result in fetchedResults {
-                    context.delete(result)
-                    print("\(result.value(forKey: "name")!) has been deleted")
-                }
-            }
-            saveContext()
-            
-        } catch {
-            print("Error occurred while clearing data")
-            abort()
-        }
-    }
-    
-    func retrieveCoreDataInfo(entName: String) -> [NSManagedObject]? {
-        let roomRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entName)
-        
-        do {
-            // Fetching results as the appropriate type
-            let fetchedRoomResults = try context.fetch(roomRequest) as? [NSManagedObject]
-            return fetchedRoomResults
-        } catch {
-            print("Error occurred while retrieving data: \(error)")
-            return nil
-        }
-    }
-
-    
-    // retrieves the info for the core data entity
-    /*func retrieveCoreDataInfo(entName: String) -> [NSManagedObject]? {
-        let roomRequest = NSFetchRequest<NSFetchRequestResult>(entityName: entName)
-        var fetchedRoomResults:[NSManagedObject]?
-        
-        do {
-            try fetchedRoomResults = context.fetch(roomRequest) as? [NSManagedObject]
-        } catch {
-            print("Error occurred while retrieving data")
-            abort()
-        }
-        
-        return(fetchedRoomResults)!
-    }*/
     
     
     func help(){

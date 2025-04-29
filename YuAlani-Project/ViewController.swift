@@ -67,23 +67,23 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     // creates the building data structure
     func loadMap(){
-        let hangar: [Any] = ["hangar", "None", "None", "Spaceship", "Port marketplace", "None", "None", ["none"]];
-        let marketplace: [Any] = ["port marketplace", "Supply depot", "Hangar", "Noodles restaurant", "Mechanic shop", "None", "None", ["none"]];
-        let supplyDepot: [Any] = ["supply depot", "Break room", "Janitor's closet", "Port marketplace", "None", "None", "None", ["supply crate", "fuel canister"]];
+        let hangar: [Any] = ["hangar", "None", "None", "spaceship", "port marketplace", "None", "None", ["none"]];
+        let marketplace: [Any] = ["port marketplace", "Supply depot", "Hangar", "noodles restaurant", "Mechanic shop", "None", "None", ["none"]];
+        let supplyDepot: [Any] = ["supply depot", "break room", "janitor's closet", "port marketplace", "None", "None", "None", ["supply crate", "fuel canister"]];
         
         let closet: [Any] = ["janitor's closet", "None", "None", "None", "Supply depot", "None", "None", ["break room key"]]
         
-        let breakRoom: [Any] = ["break room", "None", "None", "Supply depot", "None", "None", "None", ["suspicious blender"]]
+        let breakRoom: [Any] = ["break room", "None", "None", "supply depot", "None", "None", "None", ["suspicious blender"]]
         
-        let mechanicShop: [Any] = ["mechanic shop", "None", "Port marketplace", "None", "None", "None", "None", ["toolbox", "maintenance robot"]];
+        let mechanicShop: [Any] = ["mechanic shop", "None", "port marketplace", "None", "None", "None", "None", ["toolbox", "maintenance robot"]];
         
-        let restaurant: [Any] = ["noodles restaurant", "Port marketplace", "None", "None", "None", "Attic", "None", ["hot meal"]];
+        let restaurant: [Any] = ["noodles restaurant", "port marketplace", "None", "None", "None", "Attic", "None", ["hot meal"]];
         
-        let attic: [Any] = ["attic", "None", "None", "None", "None", "None", "Noodles restaurant", ["blankets"]]
+        let attic: [Any] = ["attic", "None", "None", "None", "None", "None", "noodles restaurant", ["blankets"]]
         
-        let spaceship: [Any] = ["spaceship", "Hangar", "None", "None", "Spaceship living room", "None", "None", ["none"]];
+        let spaceship: [Any] = ["spaceship", "Hangar", "None", "None", "spaceship living room", "None", "None", ["none"]];
         
-        let livingRoom: [Any] = ["spaceship living room", "None", "Spaceship", "None", "None", "None", "None", ["brand new rifle"]];
+        let livingRoom: [Any] = ["spaceship living room", "None", "spaceship", "None", "None", "None", "None", ["brand new rifle"]];
         
         floorPlan.append(createRoom(roomInfo: hangar))
         floorPlan.append(createRoom(roomInfo: marketplace))
@@ -172,6 +172,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
     
     // prints the current room
     func look(){
+        imageView.image = UIImage(named: "\(current.name.lowercased())")
         outputArea.text = "You are currently in the \(current.name)"
         outputArea.text! += "\n" + getContentsOfRoom(roomName: current.name)
     }
@@ -194,7 +195,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
         let room = getRoom(roomName: roomName)
         
         var outputString = "Contents of the room: "
-        
+
         // loops once for each item in a room
         if room.contents.count > 0 && room.contents[0] != "none"{
             for item in room.contents{
@@ -228,6 +229,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
         }
     }
     
+    // adds an item to inventory
     func pickup(item: String){
         let roomHasItem = current.contents.contains(item.lowercased())
         
@@ -240,16 +242,22 @@ class ViewController: UIViewController, UITextFieldDelegate {
             outputArea.text = "You now have the \(item). "
             current.contents.remove(at: current.contents.firstIndex(of: item)!)
             
+            imageView.image = UIImage(named: "\(item)")
             let selectedItem = retrieveItem(itemName: item)
             if selectedItem != nil && selectedItem!.price == 0 && item != "blankets"{
                 selectedItem!.hasPaid = true
             }
+            
+            if current.contents.contains("none"){
+                inventory.remove(at: inventory.firstIndex(of: "none")!)
+            }
         }
         else{
-            outputArea.text = "That item is not in this room."
+            outputArea.text = "That item is not a valid item to pick up."
         }
     }
     
+    // removes an item from inventory
     func drop(item: String){
         if let index = inventory.firstIndex(of: item) {
             //
@@ -257,6 +265,12 @@ class ViewController: UIViewController, UITextFieldDelegate {
             
             inventory.remove(at: index)
             outputArea.text = "You have dropped the \(item)."
+            
+            if current.contents.contains("none"){
+                current.contents.remove(at: current.contents.firstIndex(of: "none")!)
+            }
+            
+            imageView.image = UIImage(named: "\(item)")
         }
         else{
             outputArea.text = "You don’t have that item."
@@ -292,8 +306,9 @@ class ViewController: UIViewController, UITextFieldDelegate {
             }
             else{
                 outputArea.text = "You are now in the \(newRoomName)."
+                current = getRoom(roomName: newRoomName)
                 imageView.image = UIImage(named: "\(current.name.lowercased())")
-                return getRoom(roomName: newRoomName)
+                return current
             }
         }
         else if !checkPurchase(){ // checks for if the user bought all their inventory
@@ -323,7 +338,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
         }
         
         if !current.contents.contains(itemName) && !inventory.contains(itemName){
-            outputArea.text = "That item is not in the room."
+            outputArea.text = "That is not a valid item to buy."
             return
         }
         else if itemToBuy.hasPaid {
@@ -337,6 +352,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
             itemToBuy.hasPaid = true
             creditAmount.text = "Credits: \(credits)"
             outputArea.text = "You bought the \(itemName)."
+            imageView.image = UIImage(named: "\(itemName)")
             
             if current.contents.contains(itemName){
                 current.contents.remove(at: current.contents.firstIndex(of: itemName)!)
@@ -364,6 +380,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
             creditAmount.text = "Credits: \(credits)"
             outputArea.text = "You sold the \(itemName)."
             inventory.remove(at: inventory.firstIndex(of: itemName)!)
+            imageView.image = UIImage(named: "\(itemName)")
             
             if itemName != "brand new rifle"{
                 current.contents.append(itemName)
@@ -400,32 +417,39 @@ class ViewController: UIViewController, UITextFieldDelegate {
         return found
     }
         
-    func getInventory() -> String{
-        var outputString = "Inventory: "
-        for item in inventory{
-            outputString += "\n\t" + item
-        }
+    func listInventory() -> String{
+        var outputString = "You are currently carrying: "
         
+        if inventory.count > 0 {
+            for item in inventory{
+                outputString += "\n\t" + item
+            }
+        }
+        else{
+            outputString += "\n\t" + "nothing."
+        }
         return outputString
     }
     
-    @IBAction func enterButton(_ sender: Any) {
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         var command: String
         var itemArg = ""
         
-        let commandFieldText = commandField.text
+        guard let commandFieldText = textField.text, !commandFieldText.isEmpty else {
+                return true // dismissed if no text is entered
+            }
         
-        var commandTextSplit = commandFieldText?.components(separatedBy: " ")
+        var commandTextSplit = commandFieldText.components(separatedBy: " ")
         
         // isolates the command from the rest of the commandField text
-        command = commandTextSplit![0].lowercased()
+        command = commandTextSplit[0].lowercased()
         
-        if commandTextSplit!.count > 0{
+        if commandTextSplit.count > 0{
             // removes the command
-            commandTextSplit?.remove(at: 0)
+            commandTextSplit.remove(at: 0)
             
             // rejoins the remaining text to form the object name if using
-            itemArg = (commandTextSplit?.joined(separator: " "))!
+            itemArg = (commandTextSplit.joined(separator: " "))
         }
         
         switch command{
@@ -450,7 +474,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
             current = move(direction: "down")
             saveGame()
         case "inventory":
-            outputArea.text = getInventory()
+            outputArea.text = listInventory()
         case "takeoff":
             takeOff()
         case "exit":
@@ -472,6 +496,8 @@ class ViewController: UIViewController, UITextFieldDelegate {
         default:
             outputArea.text = "That's not a valid command."
         }
+        textField.text = ""
+        return true
     }
     
     // text that loads at the start of the game
@@ -532,6 +558,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
         floorPlan[7].contents = ["blankets"]
         
         // resets spaceship living room contents
+        // resets spaceship living room contents
         floorPlan[9].contents = ["brand new rifle"]
         
         for item in allObjects{
@@ -542,6 +569,7 @@ class ViewController: UIViewController, UITextFieldDelegate {
                 item.hasPaid = true
             }
         }
+        imageView.image = UIImage(named: "\(current.name.lowercased())")
         outputArea.text = "Welcome back, traveler!"
         startText()
         creditAmount.text = "Credits: \(credits)"
@@ -550,11 +578,11 @@ class ViewController: UIViewController, UITextFieldDelegate {
     // completes the game
     func takeOff(){
         let requiredItems = ["fuel canister", "supply crate", "maintenance robot"]
-        if current.name != "Spaceship"{
-            outputArea.text = "You need to be in the spaceship to take off!"
+        if current.name != "spaceship"{
+            outputArea.text = "You need to be in the spaceship center to take off!"
         }
         // checks if the users inventory has all the required items
-        else if !inventory.allSatisfy({ requiredItems.contains($0)}){
+        else if !requiredItems.allSatisfy({ inventory.contains($0)}){
             let missingItems = requiredItems.filter { !inventory.contains($0) }
             outputArea.text = "You can't take off yet! You still need the \(missingItems.joined(separator: ", "))"
         }
